@@ -1,5 +1,5 @@
 {
-  "name": "@napi-rs/package-template-freebsd-x64",
+  "name": "unix-dgram-rs-freebsd-x64",
   "version": "1.0.0",
   "os": [
     "freebsd"
@@ -7,26 +7,12 @@
   "cpu": [
     "x64"
   ],
-  "main": "package-template.freebsd-x64.node",
+  "main": "unix-dgram-rs.freebsd-x64.node",
   "files": [
-    "package-template.freebsd-x64.node"
-  ],
-  "description": "Template project for writing node package with napi-rs",
-  "keywords": [
-    "napi-rs",
-    "NAPI",
-    "N-API",
-    "Rust",
-    "node-addon",
-    "node-addon-api"
+    "unix-dgram-rs.freebsd-x64.node"
   ],
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "access": "public"
-  },
-  "repository": "git@github.com:napi-rs/package-template.git"
+  }
 }
