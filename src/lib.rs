@@ -1,17 +1,22 @@
-#![deny(clippy::all)]
-
-use napi_derive::napi;
+// use napi_derive::napi;
+// use std::path::Path;
+// use tokio::net::UnixDatagram;
 
 #[cfg(all(
-  any(windows, unix),
-  target_arch = "x86_64",
-  not(target_env = "musl"),
-  not(debug_assertions)
+    any(windows, unix),
+    target_arch = "x86_64",
+    not(target_env = "musl"),
+    not(debug_assertions)
 ))]
 #[global_allocator]
 static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-#[napi]
-pub fn plus_100(input: u32) -> u32 {
-  input + 100
-}
+// #[napi]
+// pub fn bind<P: AsRef<Path>>(path: P) -> napi::Result<UnixDatagram> {
+//     UnixDatagram::bind(path)
+// }
+
+// #[napi]
+// pub fn unbound() -> napi::Result<UnixDatagram> {
+//     UnixDatagram::unbound()
+// }
