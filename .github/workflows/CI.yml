@@ -216,13 +216,10 @@ jobs:
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
       - name: Download artifacts
         uses: actions/download-artifact@v2
-        if: ${{ matrix.settings.target }} != 'x86_64-pc-windows-msvc'
+        if: ${{ !contains('windows', matrix.settings.target) }}
         with:
           name: bindings-${{ matrix.settings.target }}
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Test bindings
         run: yarn test
   test-linux-x64-gnu-binding:
@@ -257,9 +254,6 @@ jobs:
         with:
           name: bindings-x86_64-unknown-linux-gnu
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Test bindings
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
   test-linux-x64-musl-binding:
@@ -294,9 +288,6 @@ jobs:
         with:
           name: bindings-x86_64-unknown-linux-musl
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Test bindings
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
   test-linux-aarch64-gnu-binding:
@@ -319,9 +310,6 @@ jobs:
         with:
           name: bindings-aarch64-unknown-linux-gnu
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
@@ -351,9 +339,6 @@ jobs:
         with:
           name: bindings-aarch64-unknown-linux-musl
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
@@ -390,9 +375,6 @@ jobs:
         with:
           name: bindings-armv7-unknown-linux-gnueabihf
           path: .
-      - name: List packages
-        run: ls -R .
-        shell: bash
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
