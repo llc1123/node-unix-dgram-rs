@@ -31,7 +31,7 @@ const getTriples = () => {
   }
 }
 
-const getNativeBinding = (): Binding => {
+const getNativeBinding = () => {
   const triples = getTriples()
   if (supportedPlatforms.includes(triples)) {
     const localFileExisted = existsSync(
@@ -47,13 +47,6 @@ const getNativeBinding = (): Binding => {
   }
 }
 
-type Binding = {
-  bind: (path: string) => NativeUnixDatagram
-  unbound: () => NativeUnixDatagram
-}
+const { UnixDatagram } = getNativeBinding()
 
-type NativeUnixDatagram = Record<string, never>
-
-const { bind, unbound } = getNativeBinding()
-
-export { bind, unbound }
+export { UnixDatagram }
