@@ -216,6 +216,7 @@ jobs:
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
       - name: Download artifacts
         uses: actions/download-artifact@v2
+        if: ${{ matrix.settings.target }} != 'x86_64-pc-windows-msvc'
         with:
           name: bindings-${{ matrix.settings.target }}
           path: .

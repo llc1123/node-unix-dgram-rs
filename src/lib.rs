@@ -1,4 +1,4 @@
-// use napi_derive::napi;
+use napi_derive::napi;
 // use std::path::Path;
 // use tokio::net::UnixDatagram;
 
@@ -20,3 +20,13 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 // pub fn unbound() -> napi::Result<UnixDatagram> {
 //     UnixDatagram::unbound()
 // }
+
+#[napi]
+pub fn bind() -> napi::Result<()> {
+    Ok(())
+}
+
+#[napi]
+pub fn unbound() -> napi::Result<()> {
+    Ok(())
+}
