@@ -1,5 +1,5 @@
 {
-  "name": "unix-dgram-rs-linux-arm-gnueabihf",
+  "name": "@llc1123/unix-dgram-linux-arm-gnueabihf",
   "version": "1.0.0",
   "os": [
     "linux"
@@ -7,9 +7,9 @@
   "cpu": [
     "arm"
   ],
-  "main": "unix-dgram-rs.linux-arm-gnueabihf.node",
+  "main": "unix-dgram.linux-arm-gnueabihf.node",
   "files": [
-    "unix-dgram-rs.linux-arm-gnueabihf.node"
+    "unix-dgram.linux-arm-gnueabihf.node"
   ],
   "license": "MIT",
   "engines": {

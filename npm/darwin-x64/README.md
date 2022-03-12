@@ -1,3 +1,3 @@
-# `unix-dgram-rs-darwin-x64`
+# `@llc1123/unix-dgram-darwin-x64`
 
-This is the **x86_64-apple-darwin** binary for `unix-dgram-rs`
+This is the **x86_64-apple-darwin** binary for `@llc1123/unix-dgram`

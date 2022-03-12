@@ -1,152 +1,52 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
-const { platform, arch } = process
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const packageName: string = require('./package.json').name
+const localFileName = packageName.split('/').slice(-1)[0]
 
-let nativeBinding = null
-let localFileExisted = false
-let isMusl = false
-let loadError = null
+const supportedPlatforms = [
+  'darwin-x64',
+  'darwin-arm64',
+  'freebsd-x64',
+  'linux-x64-gnu',
+  'linux-x64-musl',
+  'linux-arm64-gnu',
+  'linux-arm64-musl',
+  'linux-arm-gnueabihf',
+]
 
-switch (platform) {
-  case 'darwin':
-    switch (arch) {
-      case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'unix-dgram-rs.darwin-x64.node'))
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./unix-dgram-rs.darwin-x64.node')
-          } else {
-            nativeBinding = require('unix-dgram-rs-darwin-x64')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      case 'arm64':
-        localFileExisted = existsSync(
-          join(__dirname, 'unix-dgram-rs.darwin-arm64.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./unix-dgram-rs.darwin-arm64.node')
-          } else {
-            nativeBinding = require('unix-dgram-rs-darwin-arm64')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      default:
-        throw new Error(`Unsupported architecture on macOS: ${arch}`)
-    }
-    break
-  case 'freebsd':
-    if (arch !== 'x64') {
-      throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
-    }
-    localFileExisted = existsSync(join(__dirname, 'unix-dgram-rs.freebsd-x64.node'))
-    try {
-      if (localFileExisted) {
-        nativeBinding = require('./unix-dgram-rs.freebsd-x64.node')
-      } else {
-        nativeBinding = require('unix-dgram-rs-freebsd-x64')
+const getTriples = () => {
+  const { platform, arch } = process
+  switch (platform) {
+    case 'linux':
+      if (arch === 'arm') {
+        return `${platform}-${arch}-gnueabihf`
       }
-    } catch (e) {
-      loadError = e
-    }
-    break
-  case 'linux':
-    switch (arch) {
-      case 'x64':
-        isMusl = readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
-        if (isMusl) {
-          localFileExisted = existsSync(
-            join(__dirname, 'unix-dgram-rs.linux-x64-musl.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./unix-dgram-rs.linux-x64-musl.node')
-            } else {
-              nativeBinding = require('unix-dgram-rs-linux-x64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'unix-dgram-rs.linux-x64-gnu.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./unix-dgram-rs.linux-x64-gnu.node')
-            } else {
-              nativeBinding = require('unix-dgram-rs-linux-x64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 'arm64':
-        isMusl = readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
-        if (isMusl) {
-          localFileExisted = existsSync(
-            join(__dirname, 'unix-dgram-rs.linux-arm64-musl.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./unix-dgram-rs.linux-arm64-musl.node')
-            } else {
-              nativeBinding = require('unix-dgram-rs-linux-arm64-musl')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        } else {
-          localFileExisted = existsSync(
-            join(__dirname, 'unix-dgram-rs.linux-arm64-gnu.node')
-          )
-          try {
-            if (localFileExisted) {
-              nativeBinding = require('./unix-dgram-rs.linux-arm64-gnu.node')
-            } else {
-              nativeBinding = require('unix-dgram-rs-linux-arm64-gnu')
-            }
-          } catch (e) {
-            loadError = e
-          }
-        }
-        break
-      case 'arm':
-        localFileExisted = existsSync(
-          join(__dirname, 'unix-dgram-rs.linux-arm-gnueabihf.node')
-        )
-        try {
-          if (localFileExisted) {
-            nativeBinding = require('./unix-dgram-rs.linux-arm-gnueabihf.node')
-          } else {
-            nativeBinding = require('unix-dgram-rs-linux-arm-gnueabihf')
-          }
-        } catch (e) {
-          loadError = e
-        }
-        break
-      default:
-        throw new Error(`Unsupported architecture on Linux: ${arch}`)
-    }
-    break
-  default:
-    throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`)
-}
-
-if (!nativeBinding) {
-  if (loadError) {
-    throw loadError
+      return readFileSync('/usr/bin/ldd', 'utf8').includes('musl')
+        ? `${platform}-${arch}-musl`
+        : `${platform}-${arch}-gnu`
+    default:
+      return `${platform}-${arch}`
   }
-  throw new Error(`Failed to load native binding`)
 }
 
-const { plus100 } = nativeBinding
+const getNativeBinding = () => {
+  const triples = getTriples()
+  if (supportedPlatforms.includes(triples)) {
+    const localFileExisted = existsSync(
+      join(__dirname, `${localFileName}.${triples}.node`),
+    )
+    if (localFileExisted) {
+      return require(`./${localFileName}.${triples}.node`)
+    } else {
+      return require(`${packageName}-${triples}`)
+    }
+  } else {
+    throw new Error(`Unsupported OS: ${triples}`)
+  }
+}
+
+const { plus100 } = getNativeBinding()
 
 export default plus100

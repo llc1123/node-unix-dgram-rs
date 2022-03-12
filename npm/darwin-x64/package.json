@@ -1,5 +1,5 @@
 {
-  "name": "unix-dgram-rs-darwin-x64",
+  "name": "@llc1123/unix-dgram-darwin-x64",
   "version": "1.0.0",
   "os": [
     "darwin"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "unix-dgram-rs.darwin-x64.node",
+  "main": "unix-dgram.darwin-x64.node",
   "files": [
-    "unix-dgram-rs.darwin-x64.node"
+    "unix-dgram.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {

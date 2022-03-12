@@ -1,5 +1,5 @@
 {
-  "name": "unix-dgram-rs-linux-x64-gnu",
+  "name": "@llc1123/unix-dgram-linux-x64-gnu",
   "version": "1.0.0",
   "os": [
     "linux"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "unix-dgram-rs.linux-x64-gnu.node",
+  "main": "unix-dgram.linux-x64-gnu.node",
   "files": [
-    "unix-dgram-rs.linux-x64-gnu.node"
+    "unix-dgram.linux-x64-gnu.node"
   ],
   "license": "MIT",
   "engines": {

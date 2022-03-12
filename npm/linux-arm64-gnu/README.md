@@ -1,3 +1,3 @@
-# `unix-dgram-rs-linux-arm64-gnu`
+# `@llc1123/unix-dgram-linux-arm64-gnu`
 
-This is the **aarch64-unknown-linux-gnu** binary for `unix-dgram-rs`
+This is the **aarch64-unknown-linux-gnu** binary for `@llc1123/unix-dgram`

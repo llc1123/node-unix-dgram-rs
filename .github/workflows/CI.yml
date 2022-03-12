@@ -1,7 +1,7 @@
 name: CI
 env:
   DEBUG: napi:*
-  APP_NAME: unix-dgram-rs
+  APP_NAME: unix-dgram
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 on:
   push:

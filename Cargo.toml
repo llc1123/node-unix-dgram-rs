@@ -1,7 +1,7 @@
 [package]
 authors = ["llc1123 <i@llc.moe>"]
 edition = "2021"
-name = "napi-unix-dgram-rs"
+name = "napi-unix-dgram"
 version = "0.1.0"
 
 [lib]

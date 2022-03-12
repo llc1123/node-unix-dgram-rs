@@ -1,3 +1,3 @@
-# `unix-dgram-rs-freebsd-x64`
+# `@llc1123/unix-dgram-freebsd-x64`
 
-This is the **x86_64-unknown-freebsd** binary for `unix-dgram-rs`
+This is the **x86_64-unknown-freebsd** binary for `@llc1123/unix-dgram`

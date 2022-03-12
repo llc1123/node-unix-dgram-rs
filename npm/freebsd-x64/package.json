@@ -1,5 +1,5 @@
 {
-  "name": "unix-dgram-rs-freebsd-x64",
+  "name": "@llc1123/unix-dgram-freebsd-x64",
   "version": "1.0.0",
   "os": [
     "freebsd"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "unix-dgram-rs.freebsd-x64.node",
+  "main": "unix-dgram.freebsd-x64.node",
   "files": [
-    "unix-dgram-rs.freebsd-x64.node"
+    "unix-dgram.freebsd-x64.node"
   ],
   "license": "MIT",
   "engines": {
