@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import os from 'os'
 import path from 'path'
 
@@ -18,18 +19,32 @@ describe('supported platforms', () => {
   })
 })
 
-describe('create sockets', () => {
-  test('create unbounded socket', async () => {
-    const { UnixDatagram } = await import('..')
+describe('local address', () => {
+  test('unbound socket', async () => {
+    const { createSocket } = await import('..')
 
-    const socket = UnixDatagram.unbound()
-    expect(socket).toBeTruthy()
+    const socket = createSocket()
+    expect(() => socket.address()).toThrow()
   })
+  test('unnamed socket', async () => {
+    const { createSocket } = await import('..')
 
-  test('create bounded socket', async () => {
-    const { UnixDatagram } = await import('..')
+    const socket = createSocket()
+    await new Promise<void>((resolve) => {
+      socket.on('listening', () => resolve())
+      socket.bind()
+    })
+    expect(socket.address()).toBeNull()
+  })
+  test('named socket', async () => {
+    const { createSocket } = await import('..')
 
-    const socket = UnixDatagram.bind(path.join(os.tmpdir(), 'tx'))
-    expect(socket).toBeTruthy()
+    const socket = createSocket()
+    const dir = path.join(os.tmpdir(), crypto.randomBytes(20).toString('hex'))
+    await new Promise<void>((resolve) => {
+      socket.on('listening', () => resolve())
+      socket.bind(dir)
+    })
+    expect(socket.address()).toBe(dir)
   })
 })
