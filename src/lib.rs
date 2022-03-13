@@ -28,8 +28,8 @@ pub struct UnixDatagram {
 #[napi]
 impl UnixDatagram {
     /// Creates a new `UnixDatagram` bound to the specified path.
-    #[napi(factory)]
-    pub fn bind(path: String) -> napi::Result<UnixDatagram> {
+    #[napi]
+    pub async fn bind(path: String) -> napi::Result<UnixDatagram> {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
             datagram: net::UnixDatagram::bind(path)?,
@@ -37,8 +37,8 @@ impl UnixDatagram {
     }
 
     /// Creates a new `UnixDatagram` which is not bound to any address.
-    #[napi(factory)]
-    pub fn unbound() -> napi::Result<UnixDatagram> {
+    #[napi]
+    pub async fn unbound() -> napi::Result<UnixDatagram> {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
             datagram: net::UnixDatagram::unbound()?,
@@ -47,7 +47,7 @@ impl UnixDatagram {
 
     /// Connects the socket to the specified address.
     #[napi]
-    pub fn connect(&self, path: String) -> napi::Result<()> {
+    pub async fn connect(&self, path: String) -> napi::Result<()> {
         Ok(self.datagram.connect(path)?)
     }
 
@@ -114,14 +114,14 @@ impl UnixDatagram {
 
     /// Returns the local address that this socket is bound to.
     #[napi(getter)]
-    pub fn get_local_addr(&self) -> napi::Result<String> {
+    pub async fn get_local_addr(&self) -> napi::Result<String> {
         let addr = self.datagram.local_addr()?;
         Ok(format!("{:?}", addr))
     }
 
     /// Returns the address of this socket’s peer.
     #[napi(getter)]
-    pub fn get_peer_addr(&self) -> napi::Result<String> {
+    pub async fn get_peer_addr(&self) -> napi::Result<String> {
         let addr = self.datagram.peer_addr()?;
         Ok(format!("{:?}", addr))
     }
