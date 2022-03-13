@@ -127,11 +127,14 @@ jobs:
       - name: Build
         run: ${{ matrix.settings.build }}
         shell: bash
-      - name: Upload artifact
+      - name: Upload bindings
         uses: actions/upload-artifact@v2
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ${{ env.APP_NAME }}.*.node
+          path: |
+            ${{ env.APP_NAME }}.*.node
+            index.js
+            index.d.ts
           if-no-files-found: error
   build-freebsd:
     runs-on: macos-10.15
@@ -216,9 +219,8 @@ jobs:
         run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
       - name: Download artifacts
         uses: actions/download-artifact@v2
-        if: ${{ matrix.settings.host != 'windows-latest' }}
         with:
-          name: bindings-${{ matrix.settings.target }}
+          name: bindings-x86_64-apple-darwin
           path: .
       - name: Test bindings
         run: yarn test
