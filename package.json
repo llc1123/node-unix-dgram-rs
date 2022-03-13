@@ -12,8 +12,8 @@
   ],
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "tsc && napi build --platform --release --dts napi.d.ts --js napi.js",
-    "build:debug": "tsc && napi build --platform --dts napi.d.ts --js napi.js",
+    "build": "napi build --platform --release --dts napi.d.ts --js napi.js && tsc",
+    "build:debug": "napi build --platform --dts napi.d.ts --js napi.js && tsc",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "test": "jest"
