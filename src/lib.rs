@@ -19,18 +19,9 @@ pub struct Data {
     pub address: String,
 }
 
-// enum SocketStatus {
-//     Created,
-//     Listening,
-//     Closed,
-// }
-
 #[napi]
 pub struct UnixDatagram {
     _buffer_size: i32,
-    // _status: SocketStatus,
-    // _on_message: Vec<ThreadsafeFunction<OnMsgPayload, ErrorStrategy::CalleeHandled>>,
-    // datagram: Option<net::UnixDatagram>,
     datagram: net::UnixDatagram,
 }
 
@@ -135,39 +126,3 @@ impl UnixDatagram {
         Ok(format!("{:?}", addr))
     }
 }
-
-// #[napi(object)]
-// pub struct RemoteInfo {
-//     pub path: String,
-//     pub size: i32,
-// }
-
-// #[napi(object)]
-// pub struct OnMsgPayload {
-//     pub msg: Buffer,
-//     pub rinfo: RemoteInfo,
-// }
-
-// #[napi(ts_args_type = "callback?: (msg: Buffer, rinfo: RemoteInfo) => void")]
-// pub fn create_socket(callback: Option<JsFunction>) -> napi::Result<UnixDatagram> {
-//     match callback {
-//         None => Ok(UnixDatagram {
-//             _buffer_size: BUFFER_SIZE,
-//             _status: SocketStatus::Created,
-//             _on_message: vec![],
-//             datagram: None,
-//         }),
-//         Some(cb) => {
-//             let tsfn: ThreadsafeFunction<OnMsgPayload> = cb
-//                 .create_threadsafe_function(0, |ctx| {
-//                     ctx.env.create_uint32(ctx.value + 1).map(|v| vec![v])
-//                 })?;
-//             Ok(UnixDatagram {
-//                 _buffer_size: BUFFER_SIZE,
-//                 _status: SocketStatus::Created,
-//                 _on_message: vec![tsfn],
-//                 datagram: None,
-//             })
-//         }
-//     }
-// }

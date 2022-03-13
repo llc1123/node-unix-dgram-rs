@@ -1,3 +1,3 @@
 import { UnixDatagram } from './napi'
 
-UnixDatagram.unbound()
+export { UnixDatagram }
