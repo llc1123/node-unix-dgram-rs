@@ -19,74 +19,135 @@ pub struct Data {
     pub address: String,
 }
 
-#[napi]
-pub struct UnixDatagram {
-    _buffer_size: i32,
-    datagram: net::UnixDatagram,
+enum SocketStatus {
+    Created,
+    Listening,
+    Closed,
 }
 
 #[napi]
-impl UnixDatagram {
-    /// Creates a new `UnixDatagram` bound to the specified path.
-    #[napi(factory)]
-    pub fn bind(path: String) -> napi::Result<UnixDatagram> {
-        Ok(UnixDatagram {
-            _buffer_size: BUFFER_SIZE,
-            datagram: net::UnixDatagram::bind(path)?,
-        })
-    }
+pub struct UnixDatagram {
+    _buffer_size: i32,
+    _status: SocketStatus,
+    datagram: Option<net::UnixDatagram>,
+}
 
-    /// Creates a new `UnixDatagram` which is not bound to any address.
-    #[napi(factory)]
-    pub fn unbound() -> napi::Result<UnixDatagram> {
-        Ok(UnixDatagram {
-            _buffer_size: BUFFER_SIZE,
-            datagram: net::UnixDatagram::unbound()?,
-        })
-    }
+// #[napi]
+// impl UnixDatagram {
+//     /// Creates a new `UnixDatagram` bound to the specified path.
+//     #[napi(factory)]
+//     pub fn bind(path: String) -> napi::Result<UnixDatagram> {
+//         Ok(UnixDatagram {
+//             _buffer_size: BUFFER_SIZE,
+//             datagram: net::UnixDatagram::bind(path)?,
+//         })
+//     }
 
-    /// Sends data on the socket to the specified address.
-    #[napi]
-    pub async fn send_to(&self, data: Data) -> napi::Result<i64> {
-        let Data { buffer, address } = data;
-        let buf: Vec<u8> = buffer.into();
-        Ok(self.datagram.send_to(&buf, address).await? as i64)
-    }
+//     /// Creates a new `UnixDatagram` which is not bound to any address.
+//     #[napi(factory)]
+//     pub fn unbound() -> napi::Result<UnixDatagram> {
+//         Ok(UnixDatagram {
+//             _buffer_size: BUFFER_SIZE,
+//             datagram: net::UnixDatagram::unbound()?,
+//         })
+//     }
 
-    /// Receives data from the socket.
-    #[napi]
-    pub async fn recv_from(&self) -> napi::Result<Data> {
-        let mut buf = vec![0; self._buffer_size as usize];
-        let (len, addr) = self.datagram.recv_from(&mut buf).await?;
-        buf.truncate(len);
+//     /// Connects the socket to the specified address.
+//     #[napi]
+//     pub fn connect(&self, path: String) -> napi::Result<()> {
+//         Ok(self.datagram.connect(path)?)
+//     }
 
-        let buf: Buffer = buf.into();
-        let addr = addr
-            .as_pathname()
-            .map(|p| p.to_str())
-            .flatten()
-            .unwrap_or("")
-            .to_string();
-        Ok(Data {
-            buffer: buf,
-            address: addr,
-        })
-    }
+//     /// Sends data on the socket to the socket’s peer.
+//     #[napi]
+//     pub async fn send(&self, buffer: Buffer) -> napi::Result<i64> {
+//         let buf: Vec<u8> = buffer.into();
+//         Ok(self.datagram.send(&buf).await? as i64)
+//     }
 
-    #[napi(getter)]
-    pub fn get_buffer_size(&self) -> napi::Result<i32> {
-        Ok(self._buffer_size)
-    }
+//     /// Sends data on the socket to the specified address.
+//     #[napi]
+//     pub async fn send_to(&self, buffer: Buffer, address: String) -> napi::Result<i64> {
+//         let buf: Vec<u8> = buffer.into();
+//         Ok(self.datagram.send_to(&buf, address).await? as i64)
+//     }
 
-    #[napi(setter)]
-    pub fn set_buffer_size(&mut self, size: i32) -> napi::Result<()> {
-        if size < 0 {
-            return Err(napi::Error::new(
-                Status::InvalidArg,
-                "Buffer size must be greater than 0".to_string(),
-            ));
-        }
-        self._buffer_size = size;
-        Ok(())
-    }
+//     /// Receives data from the socket.
+//     #[napi]
+//     pub async fn recv(&self) -> napi::Result<Buffer> {
+//         let mut buf = vec![0; self._buffer_size as usize];
+//         let len = self.datagram.recv(&mut buf).await?;
+//         buf.truncate(len);
+//         Ok(buf.into())
+//     }
+
+//     /// Receives data from the socket.
+//     #[napi]
+//     pub async fn recv_from(&self) -> napi::Result<Data> {
+//         let mut buf = vec![0; self._buffer_size as usize];
+//         let (len, addr) = self.datagram.recv_from(&mut buf).await?;
+//         buf.truncate(len);
+
+//         let buf: Buffer = buf.into();
+//         let addr = addr
+//             .as_pathname()
+//             .and_then(|p| p.to_str())
+//             .unwrap_or("")
+//             .to_string();
+//         Ok(Data {
+//             buffer: buf,
+//             address: addr,
+//         })
+//     }
+
+//     /// Returns the buffer size of this socket.
+//     #[napi(getter)]
+//     pub fn get_buffer_size(&self) -> napi::Result<i32> {
+//         Ok(self._buffer_size)
+//     }
+
+//     /// Sets the buffer size of this socket.
+//     #[napi(setter)]
+//     pub fn set_buffer_size(&mut self, size: i32) -> napi::Result<()> {
+//         if size < 0 {
+//             return Err(napi::Error::new(
+//                 Status::InvalidArg,
+//                 "Buffer size must be greater than 0".to_string(),
+//             ));
+//         }
+//         self._buffer_size = size;
+//         Ok(())
+//     }
+
+//     /// Returns the local address that this socket is bound to.
+//     #[napi(getter)]
+//     pub fn get_local_addr(&self) -> napi::Result<String> {
+//         let addr = self.datagram.local_addr()?;
+//         Ok(format!("{:?}", addr))
+//     }
+
+//     /// Returns the address of this socket’s peer.
+//     #[napi(getter)]
+//     pub fn get_peer_addr(&self) -> napi::Result<String> {
+//         let addr = self.datagram.peer_addr()?;
+//         Ok(format!("{:?}", addr))
+//     }
+// }
+
+#[napi(object)]
+pub struct RemoteInfo {
+    pub path: String,
+    pub size: i64,
+}
+
+#[napi]
+pub fn create_socket<F>(callback: F) -> napi::Result<UnixDatagram>
+where
+    F: Fn(Buffer, RemoteInfo) -> Result<()>,
+{
+    Ok(UnixDatagram {
+        _buffer_size: BUFFER_SIZE,
+        _status: SocketStatus::Created,
+        datagram: None,
+    })
 }
