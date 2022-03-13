@@ -11,4 +11,7 @@ Cargo.lock
 
 /index.js
 /index.d.ts
+/napi.js
+/napi.d.ts
+
 *.node
