@@ -11,4 +11,6 @@ Cargo.lock
 
 /index.js
 /index.d.ts
+/index.test.js
+/index.test.d.ts
 *.node
