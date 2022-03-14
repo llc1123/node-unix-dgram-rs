@@ -124,13 +124,12 @@ impl UnixDatagram {
     }
 
     /// Returns the address of this socket’s peer.
-    #[napi(getter)]
-    pub fn get_peer_addr(&self) -> napi::Result<String> {
+    #[napi(getter, ts_return_type = "string | null")]
+    pub fn get_peer_addr(&self) -> napi::Result<Option<String>> {
         let addr = self.datagram.peer_addr()?;
         Ok(addr
             .as_pathname()
-            .map(|path| path.to_str().unwrap().to_string())
-            .unwrap())
+            .map(|path| path.to_str().unwrap().to_string()))
     }
 
     #[napi]

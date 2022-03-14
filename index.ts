@@ -107,9 +107,10 @@ class UnixDatagram extends EventEmitter {
 
   /**
    * Returns the remote address that this socket is connected to.
+   * Returns null if socket is connected to an unnamed address.
    * Throws error if socket not listening or not connected.
    */
-  public remoteAddress(): string {
+  public remoteAddress(): string | null {
     if (!this._socket) throw new Error('unbound socket')
     return this._socket.peerAddr
   }
