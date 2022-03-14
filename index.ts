@@ -9,7 +9,7 @@ type RemoteInfo = {
 
 interface UnixDatagramEvents {
   close: () => void
-  connect: () => void
+  connect: (err?: Error) => void
   error: (err: Error) => void
   listening: () => void
   message: (msg: Buffer, rinfo: RemoteInfo) => void
@@ -64,37 +64,70 @@ class UnixDatagram extends EventEmitter {
     callback?: UnixDatagramEvents['connect'],
   ): void {
     if (!this._socket) throw new Error('unbound socket')
-    if (this._socket.peerAddr) {
-      throw new Error('socket connected')
-    } else {
-      callback && this.on('connect', callback)
-      this._socket.connect(target).then(() => {
+    this._socket
+      .connect(target)
+      .then(() => {
+        callback && this.on('connect', callback)
         this.emit('connect')
       })
-    }
+      .catch((err: Error) => {
+        callback ? callback(err) : this.emit('error', err)
+      })
   }
 
   public disconnect(): void {
     // TODO: implement disconnect
   }
 
+  /**
+   * Returns current buffer size of the socket.
+   */
   public getBufferSize(): number {
     if (!this._socket) throw new Error('unbound socket')
     return this._socket.bufferSize
   }
+
+  /**
+   * Sets buffer size of the socket.
+   */
   public setBufferSize(size: number): void {
     if (!this._socket) throw new Error('unbound socket')
     this._socket.bufferSize = size
   }
 
+  /**
+   * Returns the local address that this socket is bound to.
+   * Returns null if socket is bound to an unnamed address.
+   * Throws error if socket not listening.
+   */
   public address(): string | null {
     if (!this._socket) throw new Error('unbound socket')
     return this._socket.localAddr
   }
 
+  /**
+   * Returns the remote address that this socket is connected to.
+   * Throws error if socket not listening or not connected.
+   */
   public remoteAddress(): string {
     if (!this._socket) throw new Error('unbound socket')
     return this._socket.peerAddr
+  }
+
+  /**
+   * Returns the connection status of this socket.
+   * Throws error if socket not listening.
+   */
+  private get _connected(): boolean {
+    if (!this._socket) throw new Error('unbound socket')
+    let connected = false
+    try {
+      void this._socket.peerAddr
+      connected = true
+    } catch {
+      // do nothing
+    }
+    return connected
   }
 
   public send(
@@ -103,7 +136,7 @@ class UnixDatagram extends EventEmitter {
     callback?: UnixDatagramEvents['error'],
   ): void {
     if (!this._socket) throw new Error('unbound socket')
-    if (!this._socket.peerAddr) {
+    if (this._connected) {
       if (target) throw new Error('socket connected')
       this._socket.send(msg).catch((err: Error) => {
         if (callback) {
@@ -124,10 +157,6 @@ class UnixDatagram extends EventEmitter {
     }
   }
   // TODO: receive message
-
-  // TODO: peerAddr maybe throw error on unbound socket? what about unnamed peer?
-
-  // TODO: what is the localAddr if socket unbound?
 
   // TODO: global error handler
 }

@@ -1,6 +1,6 @@
 use std::net::Shutdown;
 
-use napi::{bindgen_prelude::*, JsNull, JsString};
+use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tokio::net;
 
@@ -115,7 +115,7 @@ impl UnixDatagram {
     }
 
     /// Returns the local address that this socket is bound to.
-    #[napi(getter)]
+    #[napi(getter, ts_return_type = "string | null")]
     pub fn get_local_addr(&self) -> napi::Result<Option<String>> {
         let addr = self.datagram.local_addr()?;
         Ok(addr
@@ -127,7 +127,10 @@ impl UnixDatagram {
     #[napi(getter)]
     pub fn get_peer_addr(&self) -> napi::Result<String> {
         let addr = self.datagram.peer_addr()?;
-        Ok(format!("{:?}", addr))
+        Ok(addr
+            .as_pathname()
+            .map(|path| path.to_str().unwrap().to_string())
+            .unwrap())
     }
 
     #[napi]
