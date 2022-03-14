@@ -5,6 +5,9 @@ import path from 'path'
 const describeOnlyIf = (condition: boolean) =>
   condition ? describe.only : describe.skip
 
+const tmpPath = (): string =>
+  path.join(os.tmpdir(), crypto.randomBytes(20).toString('hex'))
+
 describeOnlyIf(process.platform === 'win32')('unsupported platforms', () => {
   test('should throw', async () => {
     expect.assertions(1)
@@ -30,8 +33,7 @@ describe('local address', () => {
     const { createSocket } = await import('..')
     const socket = createSocket()
     await new Promise<void>((resolve) => {
-      socket.on('listening', () => resolve())
-      socket.bind()
+      socket.bind(resolve)
     })
     expect(socket.address()).toBeNull()
   })
@@ -40,12 +42,23 @@ describe('local address', () => {
     const { createSocket } = await import('..')
 
     const socket = createSocket()
-    const dir = path.join(os.tmpdir(), crypto.randomBytes(20).toString('hex'))
+    const dir = tmpPath()
     await new Promise<void>((resolve) => {
-      socket.on('listening', () => resolve())
-      socket.bind(dir)
+      socket.bind(dir, resolve)
     })
     expect(socket.address()).toBe(dir)
+  })
+
+  test('closed socket', async () => {
+    const { createSocket } = await import('..')
+    const socket = createSocket()
+    await new Promise<void>((resolve) => {
+      socket.bind(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
+    expect(() => socket.address()).toThrow()
   })
 })
 
@@ -54,26 +67,28 @@ describe('remote address', () => {
     const { createSocket } = await import('..')
 
     const tx = createSocket()
-    const dir = path.join(os.tmpdir(), crypto.randomBytes(20).toString('hex'))
+    const dir = tmpPath()
     await new Promise<void>((resolve) => {
-      tx.on('listening', () => resolve())
-      tx.bind(dir)
+      tx.bind(dir, resolve)
     })
     const rx = createSocket()
     // unbound socket
     expect(() => rx.remoteAddress()).toThrow()
     await new Promise<void>((resolve) => {
-      rx.on('listening', () => resolve())
-      rx.bind()
+      rx.bind(resolve)
     })
     // not connected
     expect(() => rx.remoteAddress()).toThrow()
-    await new Promise<void>((resolve) => {
-      rx.on('connect', () => resolve())
-      rx.connect(dir)
+    await new Promise<Error | void>((resolve) => {
+      rx.connect(dir, resolve)
     })
     // connected
     expect(rx.remoteAddress()).toBe(dir)
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
+    // closed
+    expect(() => rx.remoteAddress()).toThrow()
   })
 })
 
@@ -85,64 +100,259 @@ describe('buffer size', () => {
     expect(() => socket.getBufferSize()).toThrow()
     expect(() => socket.setBufferSize(2048)).toThrow()
     await new Promise<void>((resolve) => {
-      socket.on('listening', () => resolve())
-      socket.bind()
+      socket.bind(resolve)
     })
     expect(socket.getBufferSize()).toBe(8192)
     expect(() => socket.setBufferSize(-1)).toThrow()
     expect(socket.getBufferSize()).toBe(8192)
     expect(socket.setBufferSize(2048)).toBeUndefined()
     expect(socket.getBufferSize()).toBe(2048)
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
+    expect(() => socket.getBufferSize()).toThrow()
+    expect(() => socket.setBufferSize(1024)).toThrow()
+  })
+})
+
+describe('connect', () => {
+  test('unbound socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(target, resolve)
+    })
+
+    const rx = createSocket()
+    await expect(
+      new Promise<Error | void>((resolve) => {
+        rx.connect(target, resolve)
+      }),
+    ).rejects.toThrow()
+  })
+
+  test('listening socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(target, resolve)
+    })
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(resolve)
+    })
+    await expect(
+      new Promise<Error | void>((resolve) => {
+        rx.connect(target, resolve)
+      }),
+    ).resolves.toBeUndefined()
+  })
+
+  test('connected socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(target, resolve)
+    })
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(resolve)
+    })
+    await new Promise<Error | void>((resolve) => {
+      rx.connect(target, resolve)
+    })
+    await expect(
+      new Promise<Error | void>((resolve) => {
+        rx.connect(target, resolve)
+      }),
+    ).rejects.toThrow()
+  })
+
+  test('closed socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(target, resolve)
+    })
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(resolve)
+    })
+    await new Promise<Error | void>((resolve) => {
+      rx.connect(target, resolve)
+    })
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
+    await expect(
+      new Promise<Error | void>((resolve) => {
+        rx.connect(target, resolve)
+      }),
+    ).rejects.toThrow()
   })
 })
 
 describe('send', () => {
   const data = Buffer.from('test string')
-  const connectTarget = path.join(
-    os.tmpdir(),
-    crypto.randomBytes(20).toString('hex'),
-  )
-  const sendTarget = path.join(
-    os.tmpdir(),
-    crypto.randomBytes(20).toString('hex'),
-  )
 
   test('unbound socket', async () => {
     const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
     const socket = createSocket()
     expect(() => socket.send(data)).toThrow()
-    expect(() => socket.send(data, sendTarget)).toThrow()
+    expect(() => socket.send(data, target)).toThrow()
   })
 
   test('unconnected socket', async () => {
     const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(target, resolve)
+    })
+
     const socket = createSocket()
     await new Promise<void>((resolve) => {
-      socket.on('listening', () => resolve())
-      socket.bind()
+      socket.bind(resolve)
     })
     expect(() => socket.send(data)).toThrow()
-    expect(socket.send(data, sendTarget)).toBeUndefined()
+    await expect(
+      new Promise<Error | null>((resolve) => {
+        socket.send(data, target, resolve)
+      }),
+    ).resolves.toBeNull()
   })
 
   test('connected socket', async () => {
     const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
     const rx = createSocket()
     await new Promise<void>((resolve) => {
-      rx.on('listening', () => resolve())
-      rx.bind(connectTarget)
+      rx.bind(target, resolve)
     })
 
     const tx = createSocket()
     await new Promise<void>((resolve) => {
-      tx.on('listening', () => resolve())
-      tx.bind()
+      tx.bind(resolve)
+    })
+    await new Promise<Error | void>((resolve) => {
+      tx.connect(target, resolve)
+    })
+    await expect(
+      new Promise<Error | null>((resolve) => {
+        tx.send(data, resolve)
+      }),
+    ).resolves.toBeNull()
+    expect(() => tx.send(data, target)).toThrow()
+  })
+
+  test('closed socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(target, resolve)
+    })
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(resolve)
+    })
+    await new Promise<Error | void>((resolve) => {
+      tx.connect(target, resolve)
     })
     await new Promise<void>((resolve) => {
-      tx.on('connect', () => resolve())
-      tx.connect(connectTarget)
+      tx.close(resolve)
     })
-    expect(tx.send(data)).toBeUndefined()
-    expect(() => tx.send(data, sendTarget)).toThrow()
+    expect(() => tx.send(data)).toThrow()
+    expect(() => tx.send(data, target)).toThrow()
+  })
+})
+
+describe('close', () => {
+  test('unbound socket', async () => {
+    const { createSocket } = await import('..')
+
+    const socket = createSocket()
+    await expect(
+      new Promise<void>((resolve) => {
+        socket.close(resolve)
+      }),
+    ).resolves.toBeUndefined()
+  })
+
+  test('unconnected socket', async () => {
+    const { createSocket } = await import('..')
+
+    const socket = createSocket()
+    await new Promise<void>((resolve) => {
+      socket.bind(resolve)
+    })
+    await expect(
+      new Promise<void>((resolve) => {
+        socket.close(resolve)
+      }),
+    ).resolves.toBeUndefined()
+  })
+
+  test('connected socket', async () => {
+    const { createSocket } = await import('..')
+
+    const target = tmpPath()
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(target, resolve)
+    })
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(resolve)
+    })
+    await new Promise<Error | void>((resolve) => {
+      tx.connect(target, resolve)
+    })
+    await expect(
+      new Promise<void>((resolve) => {
+        tx.close(resolve)
+      }),
+    ).resolves.toBeUndefined()
+  })
+
+  test('closed socket', async () => {
+    const { createSocket } = await import('..')
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
+    await expect(
+      new Promise<void>((resolve) => {
+        tx.close(resolve)
+      }),
+    ).rejects.toThrow()
   })
 })
