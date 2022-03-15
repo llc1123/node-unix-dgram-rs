@@ -80,11 +80,22 @@ class UnixDatagram extends EventEmitter {
       this._closed = true
       this.emit('close')
     } else {
-      this._socket.shutdown().then(() => {
-        this._closed = true
-        this._socket = null
-        this.emit('close')
-      })
+      this._socket
+        .shutdown()
+        .then(() => {
+          this._closed = true
+          this._socket = null
+          this.emit('close')
+        })
+        .catch((err: Error) => {
+          if (!this._connected) {
+            this._closed = true
+            this._socket = null
+            this.emit('close')
+          } else {
+            throw err
+          }
+        })
     }
   }
 
