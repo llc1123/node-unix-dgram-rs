@@ -2,17 +2,12 @@ import { EventEmitter } from 'stream'
 
 import { UnixDatagram as UnixDatagramNative } from './napi'
 
-type RemoteInfo = {
-  address: string
-  size: number
-}
-
 interface UnixDatagramEvents {
   close: () => void
   connect: () => void
   error: (err: Error) => void
   listening: () => void
-  message: (msg: Buffer, rinfo: RemoteInfo) => void
+  message: (msg: Buffer, address: string) => void
 }
 
 declare interface UnixDatagram {
