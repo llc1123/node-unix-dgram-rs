@@ -228,9 +228,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-x86_64-apple-darwin
-            javascript
+          name: bindings-x86_64-apple-darwin
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Test bindings
         run: yarn test
@@ -264,9 +267,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-x86_64-unknown-linux-gnu
-            javascript
+          name: bindings-x86_64-unknown-linux-gnu
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Test bindings
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
@@ -300,9 +306,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-x86_64-unknown-linux-musl
-            javascript
+          name: bindings-x86_64-unknown-linux-musl
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Test bindings
         run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
@@ -324,9 +333,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-aarch64-unknown-linux-gnu
-            javascript
+          name: bindings-aarch64-unknown-linux-gnu
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Cache NPM dependencies
         uses: actions/cache@v2
@@ -362,9 +374,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-aarch64-unknown-linux-musl
-            javascript
+          name: bindings-aarch64-unknown-linux-musl
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Cache NPM dependencies
         uses: actions/cache@v2
@@ -400,9 +415,12 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: |
-            bindings-armv7-unknown-linux-gnueabihf
-            javascript
+          name: bindings-armv7-unknown-linux-gnueabihf
+          path: .
+      - name: Download javascript
+        uses: actions/download-artifact@v2
+        with:
+          name: javascript
           path: .
       - name: Cache NPM dependencies
         uses: actions/cache@v2
