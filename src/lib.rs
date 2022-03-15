@@ -18,7 +18,8 @@ static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
 #[napi(object)]
 pub struct Data {
     pub buffer: Buffer,
-    pub address: String,
+    #[napi(ts_type = "string | null")]
+    pub address: Option<String>,
 }
 
 #[napi]
@@ -86,9 +87,7 @@ impl UnixDatagram {
         let buf: Buffer = buf.into();
         let addr = addr
             .as_pathname()
-            .and_then(|p| p.to_str())
-            .unwrap_or("")
-            .to_string();
+            .map(|path| path.to_string_lossy().to_string());
         Ok(Data {
             buffer: buf,
             address: addr,
@@ -120,7 +119,7 @@ impl UnixDatagram {
         let addr = self.datagram.local_addr()?;
         Ok(addr
             .as_pathname()
-            .map(|path| path.to_str().unwrap().to_string()))
+            .map(|path| path.to_string_lossy().to_string()))
     }
 
     /// Returns the address of this socket’s peer.
@@ -129,7 +128,7 @@ impl UnixDatagram {
         let addr = self.datagram.peer_addr()?;
         Ok(addr
             .as_pathname()
-            .map(|path| path.to_str().unwrap().to_string()))
+            .map(|path| path.to_string_lossy().to_string()))
     }
 
     #[napi]

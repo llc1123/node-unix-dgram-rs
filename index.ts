@@ -7,7 +7,7 @@ interface UnixDatagramEvents {
   connect: () => void
   error: (err: Error) => void
   listening: () => void
-  message: (msg: Buffer, address: string) => void
+  message: (msg: Buffer, address: string | null) => void
 }
 
 declare interface UnixDatagram {
@@ -25,6 +25,23 @@ declare interface UnixDatagram {
 class UnixDatagram extends EventEmitter {
   private _socket: UnixDatagramNative | null = null
   private _closed = false
+
+  private async _startListening() {
+    if (this._socket) {
+      while (this._socket) {
+        try {
+          const { buffer, address } = await this._socket.recvFrom()
+          this.emit('message', buffer, address ?? null)
+        } catch (err) {
+          if (err instanceof Error) {
+            this.emit('error', err)
+          }
+        }
+      }
+    } else {
+      throw new Error('unbound socket')
+    }
+  }
 
   /**
    * Listen for datagram messages on a unix socket.
@@ -55,11 +72,13 @@ class UnixDatagram extends EventEmitter {
       UnixDatagramNative.bind(path).then((sk) => {
         this._socket = sk
         this.emit('listening')
+        this._startListening()
       })
     } else {
       UnixDatagramNative.unbound().then((sk) => {
         this._socket = sk
         this.emit('listening')
+        this._startListening()
       })
     }
   }
@@ -145,7 +164,7 @@ class UnixDatagram extends EventEmitter {
   public address(): string | null {
     if (this._closed) throw new Error('socket closed')
     if (!this._socket) throw new Error('unbound socket')
-    return this._socket.localAddr
+    return this._socket.localAddr ?? null
   }
 
   /**
@@ -156,7 +175,7 @@ class UnixDatagram extends EventEmitter {
   public remoteAddress(): string | null {
     if (this._closed) throw new Error('socket closed')
     if (!this._socket) throw new Error('unbound socket')
-    return this._socket.peerAddr
+    return this._socket.peerAddr ?? null
   }
 
   /**
@@ -166,14 +185,13 @@ class UnixDatagram extends EventEmitter {
   private get _connected(): boolean {
     if (this._closed) throw new Error('socket closed')
     if (!this._socket) throw new Error('unbound socket')
-    let connected = false
     try {
       void this._socket.peerAddr
-      connected = true
+      return true
     } catch {
       // do nothing
     }
-    return connected
+    return false
   }
 
   /**
