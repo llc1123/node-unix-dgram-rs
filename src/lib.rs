@@ -1,4 +1,4 @@
-use std::net::Shutdown;
+use std::{net::Shutdown, sync::Arc};
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -25,7 +25,7 @@ pub struct Data {
 #[napi]
 pub struct UnixDatagram {
     _buffer_size: i32,
-    datagram: net::UnixDatagram,
+    datagram: Arc<net::UnixDatagram>,
 }
 
 #[napi]
@@ -35,7 +35,7 @@ impl UnixDatagram {
     pub async fn bind(path: String) -> napi::Result<UnixDatagram> {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
-            datagram: net::UnixDatagram::bind(path)?,
+            datagram: Arc::new(net::UnixDatagram::bind(path)?),
         })
     }
 
@@ -44,7 +44,7 @@ impl UnixDatagram {
     pub async fn unbound() -> napi::Result<UnixDatagram> {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
-            datagram: net::UnixDatagram::unbound()?,
+            datagram: Arc::new(net::UnixDatagram::unbound()?),
         })
     }
 
@@ -72,7 +72,8 @@ impl UnixDatagram {
     #[napi]
     pub async fn recv(&self) -> napi::Result<Buffer> {
         let mut buf = vec![0; self._buffer_size as usize];
-        let len = self.datagram.recv(&mut buf).await?;
+        let datagram = self.datagram.clone();
+        let len = datagram.recv(&mut buf).await?;
         buf.truncate(len);
         Ok(buf.into())
     }
@@ -81,7 +82,8 @@ impl UnixDatagram {
     #[napi]
     pub async fn recv_from(&self) -> napi::Result<Data> {
         let mut buf = vec![0; self._buffer_size as usize];
-        let (len, addr) = self.datagram.recv_from(&mut buf).await?;
+        let datagram = self.datagram.clone();
+        let (len, addr) = datagram.recv_from(&mut buf).await?;
         buf.truncate(len);
 
         let buf: Buffer = buf.into();
