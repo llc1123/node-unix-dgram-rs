@@ -33,6 +33,7 @@ class UnixDatagram extends EventEmitter {
           const { buffer, address } = await this._socket.recvFrom()
           this.emit('message', buffer, address ?? null)
         } catch (err) {
+          if (this._closed) return
           if (err instanceof Error) {
             this.emit('error', err)
           }
@@ -134,10 +135,6 @@ class UnixDatagram extends EventEmitter {
       })
   }
 
-  public disconnect(): void {
-    // TODO: implement disconnect
-  }
-
   /**
    * Returns current buffer size of the socket.
    */
@@ -227,7 +224,7 @@ class UnixDatagram extends EventEmitter {
       this._socket
         .send(msg)
         .then(() => {
-          callback && callback(null)
+          callback?.(null)
         })
         .catch((err: Error) => {
           callback ? callback(err) : this.emit('error', err)
@@ -237,14 +234,13 @@ class UnixDatagram extends EventEmitter {
       this._socket
         .sendTo(msg, target)
         .then(() => {
-          callback && callback(null)
+          callback?.(null)
         })
         .catch((err: Error) => {
           callback ? callback(err) : this.emit('error', err)
         })
     }
   }
-  // TODO: receive message
 }
 
 const createSocket = (callback?: UnixDatagramEvents['message']) => {

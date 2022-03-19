@@ -27,6 +27,9 @@ describe('local address', () => {
     const { createSocket } = await import('..')
     const socket = createSocket()
     expect(() => socket.address()).toThrow()
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
   })
 
   test('unnamed socket', async () => {
@@ -36,6 +39,9 @@ describe('local address', () => {
       socket.bind(resolve)
     })
     expect(socket.address()).toBeNull()
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
   })
 
   test('named socket', async () => {
@@ -47,6 +53,9 @@ describe('local address', () => {
       socket.bind(dir, resolve)
     })
     expect(socket.address()).toBe(dir)
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
   })
 
   test('closed socket', async () => {
@@ -89,6 +98,9 @@ describe('remote address', () => {
     })
     // closed
     expect(() => rx.remoteAddress()).toThrow()
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
   })
 })
 
@@ -132,6 +144,12 @@ describe('connect', () => {
         rx.connect(target, resolve)
       }),
     ).rejects.toThrow()
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
   })
 
   test('listening socket', async () => {
@@ -153,6 +171,13 @@ describe('connect', () => {
         rx.connect(target, resolve)
       }),
     ).resolves.toBeUndefined()
+
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
   })
 
   test('connected socket', async () => {
@@ -177,6 +202,12 @@ describe('connect', () => {
         rx.connect(target, resolve)
       }),
     ).rejects.toThrow()
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
   })
 
   test('closed socket', async () => {
@@ -204,6 +235,9 @@ describe('connect', () => {
         rx.connect(target, resolve)
       }),
     ).rejects.toThrow()
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
   })
 })
 
@@ -218,6 +252,10 @@ describe('send', () => {
     const socket = createSocket()
     expect(() => socket.send(data)).toThrow()
     expect(() => socket.send(data, target)).toThrow()
+
+    await new Promise<void>((resolve) => {
+      socket.close(resolve)
+    })
   })
 
   test('unconnected socket', async () => {
@@ -229,17 +267,22 @@ describe('send', () => {
     await new Promise<void>((resolve) => {
       rx.bind(target, resolve)
     })
-
-    const socket = createSocket()
+    const tx = createSocket()
     await new Promise<void>((resolve) => {
-      socket.bind(resolve)
+      tx.bind(resolve)
     })
-    expect(() => socket.send(data)).toThrow()
+    expect(() => tx.send(data)).toThrow()
     await expect(
       new Promise<Error | null>((resolve) => {
-        socket.send(data, target, resolve)
+        tx.send(data, target, resolve)
       }),
     ).resolves.toBeNull()
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
   })
 
   test('connected socket', async () => {
@@ -265,6 +308,12 @@ describe('send', () => {
       }),
     ).resolves.toBeNull()
     expect(() => tx.send(data, target)).toThrow()
+    await new Promise<void>((resolve) => {
+      tx.close(resolve)
+    })
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
   })
 
   test('closed socket', async () => {
@@ -289,6 +338,9 @@ describe('send', () => {
     })
     expect(() => tx.send(data)).toThrow()
     expect(() => tx.send(data, target)).toThrow()
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
   })
 })
 
@@ -340,6 +392,10 @@ describe('close', () => {
         tx.close(resolve)
       }),
     ).resolves.toBeUndefined()
+
+    await new Promise<void>((resolve) => {
+      rx.close(resolve)
+    })
   })
 
   test('closed socket', async () => {
@@ -354,5 +410,31 @@ describe('close', () => {
         tx.close(resolve)
       }),
     ).rejects.toThrow()
+  })
+})
+
+describe('recv', () => {
+  test('unconnected socket', async () => {
+    const { createSocket } = await import('..')
+    const target = tmpPath()
+
+    const tx = createSocket()
+    await new Promise<void>((resolve) => {
+      tx.bind(resolve)
+    })
+
+    const rx = createSocket()
+    await new Promise<void>((resolve) => {
+      rx.bind(target, resolve)
+    })
+    const cb = jest.fn()
+    rx.on('message', cb)
+    const data = Buffer.from('test')
+    await new Promise<void>((resolve, reject) =>
+      tx.send(Buffer.from('test'), target, (err) => {
+        err ? resolve() : reject(err)
+      }),
+    )
+    expect(cb).toHaveBeenCalledWith(data, null)
   })
 })
