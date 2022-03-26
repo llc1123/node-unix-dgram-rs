@@ -432,9 +432,12 @@ describe('recv', () => {
     const data = Buffer.from('test')
     await new Promise<void>((resolve, reject) =>
       tx.send(Buffer.from('test'), target, (err) => {
-        err ? resolve() : reject(err)
+        err ? reject(err) : resolve()
       }),
     )
+    await new Promise<void>((res) => setTimeout(res, 100))
     expect(cb).toHaveBeenCalledWith(data, null)
+
+    rx.close()
   })
 })

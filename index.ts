@@ -16,6 +16,11 @@ declare interface UnixDatagram {
     listener: UnixDatagramEvents[U],
   ): this
 
+  once<U extends keyof UnixDatagramEvents>(
+    event: U,
+    listener: UnixDatagramEvents[U],
+  ): this
+
   emit<U extends keyof UnixDatagramEvents>(
     event: U,
     ...args: Parameters<UnixDatagramEvents[U]>
@@ -25,8 +30,11 @@ declare interface UnixDatagram {
 class UnixDatagram extends EventEmitter {
   private _socket: UnixDatagramNative | null = null
   private _closed = false
+  private _recvLoop = false
 
   private async _startListening() {
+    if (this._recvLoop) return
+    this._recvLoop = true
     if (this._socket) {
       while (this._socket) {
         try {
@@ -42,6 +50,26 @@ class UnixDatagram extends EventEmitter {
     } else {
       throw new Error('unbound socket')
     }
+  }
+
+  on<U extends keyof UnixDatagramEvents>(
+    event: U,
+    listener: UnixDatagramEvents[U],
+  ): this {
+    if (event === 'message') {
+      this._startListening()
+    }
+    return super.on(event, listener)
+  }
+
+  once<U extends keyof UnixDatagramEvents>(
+    event: U,
+    listener: UnixDatagramEvents[U],
+  ): this {
+    if (event === 'message') {
+      this._startListening()
+    }
+    return super.once(event, listener)
   }
 
   /**
@@ -68,18 +96,16 @@ class UnixDatagram extends EventEmitter {
       callback = arg1
     }
 
-    callback && this.on('listening', callback)
+    callback && this.once('listening', callback)
     if (path) {
       UnixDatagramNative.bind(path).then((sk) => {
         this._socket = sk
         this.emit('listening')
-        this._startListening()
       })
     } else {
       UnixDatagramNative.unbound().then((sk) => {
         this._socket = sk
         this.emit('listening')
-        this._startListening()
       })
     }
   }
@@ -90,11 +116,12 @@ class UnixDatagram extends EventEmitter {
    */
   public close(callback?: UnixDatagramEvents['close']): void {
     if (this._closed) throw new Error('socket closed')
-    callback && this.on('close', callback)
+    callback && this.once('close', callback)
     if (!this._socket) {
       this._closed = true
       this.emit('close')
     } else {
+      this._socket.cancel()
       this._socket
         .shutdown()
         .then(() => {
@@ -127,7 +154,7 @@ class UnixDatagram extends EventEmitter {
     this._socket
       .connect(target)
       .then(() => {
-        callback && this.on('connect', callback)
+        callback && this.once('connect', callback)
         this.emit('connect')
       })
       .catch((err: Error) => {

@@ -2,7 +2,8 @@ use std::{net::Shutdown, sync::Arc};
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use tokio::net;
+use tokio::sync::Notify;
+use tokio::{net, select};
 
 const BUFFER_SIZE: i32 = 8192;
 
@@ -26,6 +27,13 @@ pub struct Data {
 pub struct UnixDatagram {
     _buffer_size: i32,
     datagram: Arc<net::UnixDatagram>,
+    notify: Arc<Notify>,
+}
+
+impl Drop for UnixDatagram {
+    fn drop(&mut self) {
+        self.notify.notify_waiters();
+    }
 }
 
 #[napi]
@@ -36,6 +44,7 @@ impl UnixDatagram {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
             datagram: Arc::new(net::UnixDatagram::bind(path)?),
+            notify: Arc::new(Notify::new()),
         })
     }
 
@@ -45,6 +54,7 @@ impl UnixDatagram {
         Ok(UnixDatagram {
             _buffer_size: BUFFER_SIZE,
             datagram: Arc::new(net::UnixDatagram::unbound()?),
+            notify: Arc::new(Notify::new()),
         })
     }
 
@@ -73,7 +83,11 @@ impl UnixDatagram {
     pub async fn recv(&self) -> napi::Result<Buffer> {
         let mut buf = vec![0; self._buffer_size as usize];
         let datagram = self.datagram.clone();
-        let len = datagram.recv(&mut buf).await?;
+        let notify = self.notify.clone();
+        let len = select! {
+            res = datagram.recv(&mut buf) => res?,
+            _ = notify.notified() => return Err(napi::Error::from_status(napi::Status::Cancelled))
+        };
         buf.truncate(len);
         Ok(buf.into())
     }
@@ -83,7 +97,11 @@ impl UnixDatagram {
     pub async fn recv_from(&self) -> napi::Result<Data> {
         let mut buf = vec![0; self._buffer_size as usize];
         let datagram = self.datagram.clone();
-        let (len, addr) = datagram.recv_from(&mut buf).await?;
+        let notify = self.notify.clone();
+        let (len, addr) = select! {
+            res = datagram.recv_from(&mut buf) => res?,
+            _ = notify.notified() => return Err(napi::Error::from_status(napi::Status::Cancelled))
+        };
         buf.truncate(len);
 
         let buf: Buffer = buf.into();
@@ -136,5 +154,10 @@ impl UnixDatagram {
     #[napi]
     pub async fn shutdown(&self) -> napi::Result<()> {
         Ok(self.datagram.shutdown(Shutdown::Both)?)
+    }
+
+    #[napi]
+    pub fn cancel(&self) {
+        self.notify.notify_waiters();
     }
 }
